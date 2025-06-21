@@ -68,7 +68,6 @@ class EntityCrudController extends Controller
     public function actionView(int $id): string
     {
         $model = Yii::$app->cache->get("entity_" . $id);
-        //dd($model);
 
         if (!$model) {
             $model = $this->findModel($id);
