@@ -2,7 +2,7 @@ version: '3'
 services:
     nginx:
         image: nginx:alpine
-        container_name: nginx_test
+        container_name: nginx
         ports:
             - "80:80"
             - "443:443"
@@ -10,12 +10,16 @@ services:
             - ./hosts:/etc/nginx/conf.d
             - ./www:/var/www
             - ./logs/nginx:/var/log/nginx
-        links:
+        networks:
+            - yii2
+        depends_on:
             - php
     php:
         build: ./images/php
-        container_name: php_test
-        links:
+        container_name: php
+        networks:
+            - yii2
+        depends_on:
             - db
             - postgres
         volumes:
@@ -23,6 +27,8 @@ services:
     db:
         image: mysql:latest
         container_name: db
+        networks:
+            - yii2
         env_file: 
             - .env
         restart: always
@@ -39,15 +45,21 @@ services:
             MYSQL_PASSWORD: ${DB_PASSWORD}
     adminer:
         image: adminer
-        container_name: adminer_test
-        links:
+        container_name: adminer
+        networks:
+            - yii2
+        depends_on:
             - db
             - postgres
         ports:
             - "82:8080"
     phpmyadmin:
         image: phpmyadmin:latest
-        container_name: phpmyadmin_test
+        container_name: phpmyadmin
+        depends_on:
+            -   db
+        networks:
+            - yii2
         env_file: 
             - .env
         restart: always
@@ -60,7 +72,9 @@ services:
             - "83:80"
     postgres:
         image: postgres:latest
-        container_name: postgres_test
+        container_name: postgres
+        networks:
+            - yii2
         restart: always
         environment:
             POSTGRES_DB: ${DB_NAME}
@@ -72,11 +86,13 @@ services:
             - "5432:5432"
     pgadmin:
         image: dpage/pgadmin4:latest
-        container_name: pgadmin_test
+        container_name: pgadmin
+        networks:
+            - yii2
         environment:
             PGADMIN_DEFAULT_EMAIL: user@domain.com
             PGADMIN_DEFAULT_PASSWORD: pgadmin
-        links:
+        depends_on:
             - postgres
         ports:
             - "84:80"
@@ -84,8 +100,24 @@ services:
     cron:
         container_name: cron
         build: ./images/cron
+        networks:
+            - yii2
         volumes:
         - ./www:/var/www
         - ./logs/cron:/var/log/cron
       #  - ./images/cron/crontabs:/var/spool/cron/crontabs
-        
+
+    redis:
+        image: redis:alpine
+        ports:
+            - "6379:6379"
+        networks:
+            - yii2
+
+networks:
+    yii2:
+        driver: bridge
+
+volumes:
+    yii2-redis:
+        driver: local
