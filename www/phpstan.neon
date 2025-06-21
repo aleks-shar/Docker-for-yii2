@@ -1,0 +1,15 @@
+    paths:
+        - assets/
+        - commands/
+        - controllers/
+        - mail
+        - models
+
+    level: 9
+
+    ignoreErrors:
+        - '#PHPDoc tag @var#'
+        - '#PHPDoc tag @param#'
+
+    excludePaths:
+

@@ -121,3 +121,4 @@ networks:
 volumes:
     yii2-redis:
         driver: local
+        
