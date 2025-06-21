@@ -1,0 +1,91 @@
+version: '3'
+services:
+    nginx:
+        image: nginx:alpine
+        container_name: nginx_test
+        ports:
+            - "80:80"
+            - "443:443"
+        volumes:
+            - ./hosts:/etc/nginx/conf.d
+            - ./www:/var/www
+            - ./logs/nginx:/var/log/nginx
+        links:
+            - php
+    php:
+        build: ./images/php
+        container_name: php_test
+        links:
+            - db
+            - postgres
+        volumes:
+            - ./www:/var/www
+    db:
+        image: mysql:latest
+        container_name: db
+        env_file: 
+            - .env
+        restart: always
+        ports:
+            - "3306:3306"
+        volumes:
+            - ./etc/mysql/my.cnf:/etc/mysql/my.cnf
+            - ./logs/mysql:/var/log/mysql
+            - ./mysql:/var/lib/mysql
+        environment:
+            MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+            MYSQL_DATABASE: ${DB_NAME}
+            MYSQL_USER: ${DB_USERNAME}
+            MYSQL_PASSWORD: ${DB_PASSWORD}
+    adminer:
+        image: adminer
+        container_name: adminer_test
+        links:
+            - db
+            - postgres
+        ports:
+            - "82:8080"
+    phpmyadmin:
+        image: phpmyadmin:latest
+        container_name: phpmyadmin_test
+        env_file: 
+            - .env
+        restart: always
+        environment:
+            PMA_HOST: db
+            #PMA_PORT: 3306
+            PMA_USER: root
+            PMA_PASSWORD: ${DB_ROOT_PASSWORD}
+        ports:
+            - "83:80"
+    postgres:
+        image: postgres:latest
+        container_name: postgres_test
+        restart: always
+        environment:
+            POSTGRES_DB: ${DB_NAME}
+            POSTGRES_USER: ${DB_USERNAME}
+            POSTGRES_PASSWORD: ${DB_PASSWORD}
+        volumes:
+            - ./pgdata:/var/lib/postgresql/data
+        ports:
+            - "5432:5432"
+    pgadmin:
+        image: dpage/pgadmin4:latest
+        container_name: pgadmin_test
+        environment:
+            PGADMIN_DEFAULT_EMAIL: user@domain.com
+            PGADMIN_DEFAULT_PASSWORD: pgadmin
+        links:
+            - postgres
+        ports:
+            - "84:80"
+
+    cron:
+        container_name: cron
+        build: ./images/cron
+        volumes:
+        - ./www:/var/www
+        - ./logs/cron:/var/log/cron
+      #  - ./images/cron/crontabs:/var/spool/cron/crontabs
+        
