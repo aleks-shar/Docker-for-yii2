@@ -3,10 +3,14 @@
 namespace app\controllers;
 
 use app\models\Entity;
+use Throwable;
 use yii\data\ActiveDataProvider;
+use yii\db\Exception;
 use yii\web\Controller;
 use yii\web\NotFoundHttpException;
 use yii\filters\VerbFilter;
+use Yii;
+use yii\web\Response;
 
 /**
  * EntityCrudController implements the CRUD actions for Entity model.
@@ -16,7 +20,7 @@ class EntityCrudController extends Controller
     /**
      * @inheritDoc
      */
-    public function behaviors()
+    public function behaviors(): array
     {
         return array_merge(
             parent::behaviors(),
@@ -36,11 +40,10 @@ class EntityCrudController extends Controller
      *
      * @return string
      */
-    public function actionIndex()
+    public function actionIndex(): string
     {
         $dataProvider = new ActiveDataProvider([
             'query' => Entity::find(),
-            /*
             'pagination' => [
                 'pageSize' => 50
             ],
@@ -49,7 +52,6 @@ class EntityCrudController extends Controller
                     'id' => SORT_DESC,
                 ]
             ],
-            */
         ]);
 
         return $this->render('index', [
@@ -63,19 +65,28 @@ class EntityCrudController extends Controller
      * @return string
      * @throws NotFoundHttpException if the model cannot be found
      */
-    public function actionView($id)
+    public function actionView(int $id): string
     {
+        $model = Yii::$app->cache->get("entity_" . $id);
+        //dd($model);
+
+        if (!$model) {
+            $model = $this->findModel($id);
+            Yii::$app->cache->set("entity_" . $id, $model, 60 * 60);
+        }
+
         return $this->render('view', [
-            'model' => $this->findModel($id),
+            'model' => $model,
         ]);
     }
 
     /**
      * Creates a new Entity model.
      * If creation is successful, the browser will be redirected to the 'view' page.
-     * @return string|\yii\web\Response
+     * @return string|Response
+     * @throws Exception
      */
-    public function actionCreate()
+    public function actionCreate(): Response|string
     {
         $model = new Entity();
 
@@ -96,14 +107,15 @@ class EntityCrudController extends Controller
      * Updates an existing Entity model.
      * If update is successful, the browser will be redirected to the 'view' page.
      * @param int $id ID
-     * @return string|\yii\web\Response
-     * @throws NotFoundHttpException if the model cannot be found
+     * @return string|Response
+     * @throws NotFoundHttpException|Exception if the model cannot be found
      */
-    public function actionUpdate($id)
+    public function actionUpdate($id): Response|string
     {
         $model = $this->findModel($id);
 
         if ($this->request->isPost && $model->load($this->request->post()) && $model->save()) {
+            Yii::$app->cache->delete("entity_" . $id);
             return $this->redirect(['view', 'id' => $model->id]);
         }
 
@@ -116,12 +128,13 @@ class EntityCrudController extends Controller
      * Deletes an existing Entity model.
      * If deletion is successful, the browser will be redirected to the 'index' page.
      * @param int $id ID
-     * @return \yii\web\Response
-     * @throws NotFoundHttpException if the model cannot be found
+     * @return Response
+     * @throws \Exception|Throwable if the model cannot be found
      */
-    public function actionDelete($id)
+    public function actionDelete(int $id): Response
     {
         $this->findModel($id)->delete();
+        Yii::$app->cache->delete("entity_" . $id);
 
         return $this->redirect(['index']);
     }
@@ -133,7 +146,7 @@ class EntityCrudController extends Controller
      * @return Entity the loaded model
      * @throws NotFoundHttpException if the model cannot be found
      */
-    protected function findModel($id)
+    protected function findModel(int $id): Entity
     {
         if (($model = Entity::findOne(['id' => $id])) !== null) {
             return $model;
