@@ -98,16 +98,6 @@ services:
         ports:
             - "84:80"
 
-    cron:
-        container_name: cron
-        build: ./images/cron
-        networks:
-            - yii2
-        volumes:
-        - ./www:/var/www
-        - ./logs/cron:/var/log/cron
-      #  - ./images/cron/crontabs:/var/spool/cron/crontabs
-
     redis:
         image: redis:alpine
         container_name: yii2_redis
